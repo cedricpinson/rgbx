@@ -81,11 +81,11 @@ struct RGBD : Operator {
 
 
 //http://iwasbeingirony.blogspot.fr/2010/06/difference-between-rgbm-and-rgbd.html
-struct RGBDRange2 : Operator {
+struct RGBDRange : Operator {
 
     const double _range;
 
-    RGBDRange2( double range): _range( range ) {
+    RGBDRange( double range): _range( range ) {
     }
 
     const char* getName() const { return "rgbd2"; }
@@ -112,37 +112,6 @@ struct RGBDRange2 : Operator {
         rgb[2]   = rgbm[2] * f / 255.0;
     }
 };
-
-
-struct RGBDRange : Operator {
-
-    const double _range;
-
-    RGBDRange( double range): _range( range ) {
-    }
-
-    const char* getName() const { return "rgbd"; }
-
-    void encode( float rgb[3], uint8_t rgbm[4]) const {
-
-        double maxRGB = std::max( std::max( rgb[0], 1.0f) , std::max( rgb[1], rgb[2] ) );
-        double D      = std::max( _range / maxRGB, 1.0);
-        D             = std::min( floor(D) / 255.0, 1.0); // the 255 is to save in uint8 space
-        double f      = 255.0 * (D * (255.0 / _range));
-        rgbm[0]       = rgb[0] * f;
-        rgbm[1]       = rgb[1] * f;
-        rgbm[2]       = rgb[2] * f;
-        rgbm[3]       = D * 255.0;
-    }
-
-    void decode( uint8_t rgbm[4], float rgb[3] ) const {
-        double f = _range / ( rgbm[3] * 255.0 );
-        rgb[0]   = rgbm[0] * f;
-        rgb[1]   = rgbm[1] * f;
-        rgb[2]   = rgbm[2] * f;
-    }
-};
-
 
 
 /* Converts a float RGB pixel into byte RGB with a common exponent.
@@ -194,7 +163,7 @@ struct Process {
     }
 
     void setRGBD2(  double range ) {
-        _operator = new RGBDRange2( range );
+        _operator = new RGBDRange( range );
         std::cout << "use range " << range << " for " << _operator->getName() << std::endl;
     }
     void setRGBD() {
