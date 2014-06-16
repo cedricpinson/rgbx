@@ -10,7 +10,7 @@ fi
 
 for method in ${methods}
 do
-    ./rgbx -m ${method} -r ${range} ${filename} "${filename}_${method}_${range}.tga"
-    ./rgbx -d -m ${method} -r ${range} "${filename}_${method}_${range}.tga" "${filename}_${method}_${range}_decode.tif"
+    ./rgbx -m ${method} -r ${range} ${filename} "${filename}_${method}_${range}.png"
+    ./rgbx -d -m ${method} -r ${range} "${filename}_${method}_${range}.png" "${filename}_${method}_${range}_decode.tif"
     iinfo --stats "${filename}_${method}_${range}_decode.tif"
 done
