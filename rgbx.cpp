@@ -29,30 +29,117 @@ struct RGBM : Operator {
     const char* getName() const { return "rgbm"; }
     void encode( float rgb[3], uint8_t rgbm[4]) const {
 
-        // in our case,
-        const double kRGBMMaxRange = _range;
-        const double kOneOverRGBMMaxRange = 1.0 / kRGBMMaxRange;
+        const double oneOverRange = 1.0 / _range;
 
-        // encode to RGBM, c = RGBA colors in 0..1 floats
-        double r = rgb[0] * kOneOverRGBMMaxRange;
-        double g = rgb[1] * kOneOverRGBMMaxRange;
-        double b = rgb[2] * kOneOverRGBMMaxRange;
+        double r = rgb[0] * oneOverRange;
+        double g = rgb[1] * oneOverRange;
+        double b = rgb[2] * oneOverRange;
 
-        double a = std::max( std::max(r, g), std::max(b, 1e-6) );
-        a = ceil(a * 255.0) / 255.0;
+        double maxRGB = std::max( r , std::max( g, b ) );
+        double a = ceil(maxRGB * 255.0) / 255.0;
 
-        rgbm[3] = (uint8_t)floor(255.0*std::min(a, 1.0));
-        rgbm[0] = (uint8_t)floor(255.0*std::min(r / a, 1.0));
-        rgbm[1] = (uint8_t)floor(255.0*std::min(g / a, 1.0));
-        rgbm[2] = (uint8_t)floor(255.0*std::min(b / a, 1.0));
+        rgbm[0] = std::round(255.0*std::min(r / a, 1.0));
+        rgbm[1] = std::round(255.0*std::min(g / a, 1.0));
+        rgbm[2] = std::round(255.0*std::min(b / a, 1.0));
+        rgbm[3] = std::round(255.0*std::min(a, 1.0));
     }
 
     void decode( uint8_t rgbm[4], float rgb[3] ) const {
-        double f = 1.0/(255.0*255.0);
-        double a = rgbm[3] * f * _range;
+        double a = rgbm[3] * _range / ( 255.0 * 255.0 );
         rgb[0] = rgbm[0] * a;
         rgb[1] = rgbm[1] * a;
         rgb[2] = rgbm[2] * a;
+    }
+};
+
+
+//http://vemberaudio.se/graphics/RGBdiv8.pdf
+struct RGBD : Operator {
+
+    const char* getName() const { return "rgbd"; }
+
+    void encode( float rgb[3], uint8_t rgbm[4]) const {
+
+        double maxRGB = std::max( std::max( rgb[0], 1.0f) , std::max( rgb[1], rgb[2] ) );
+        if ( maxRGB > 8.0 ) {
+            //std::cout << maxRGB << std::endl;
+        }
+        double f      = 255.0/maxRGB;
+        rgbm[0]       = rgb[0] * f;
+        rgbm[1]       = rgb[1] * f;
+        rgbm[2]       = rgb[2] * f;
+        rgbm[3]       = f;
+    }
+
+    void decode( uint8_t rgbm[4], float rgb[3] ) const {
+        double f = 1.0 / rgbm[3];
+        rgb[0]   = rgbm[0] * f;
+        rgb[1]   = rgbm[1] * f;
+        rgb[2]   = rgbm[2] * f;
+    }
+};
+
+
+//http://iwasbeingirony.blogspot.fr/2010/06/difference-between-rgbm-and-rgbd.html
+struct RGBDRange2 : Operator {
+
+    const double _range;
+
+    RGBDRange2( double range): _range( range ) {
+    }
+
+    const char* getName() const { return "rgbd2"; }
+
+    void encode( float rgb[3], uint8_t rgbm[4]) const {
+
+        double maxRGB = std::max( std::max( rgb[0], 1.0f ) , std::max( rgb[1], rgb[2] ) );
+
+        double D       = std::max( _range / maxRGB, 1.0);
+        D              = std::min( floor( D ) / 255.0, 1.0);
+        double f       = D * (255.0/_range);
+        rgbm[0]        = 255.0 * rgb[0] * f;
+        rgbm[1]        = 255.0 * rgb[1] * f;
+        rgbm[2]        = 255.0 * rgb[2] * f;
+        rgbm[3]        = 255.0 * D;
+        // return float4(rgb.rgb * (D * (255.0 / MaxRange)), D);
+    }
+
+    void decode( uint8_t rgbm[4], float rgb[3] ) const {
+        //return rgbd.rgb * ((MaxRange / 255.0) / rgbd.a);
+        double f = _range / 255.0 / (rgbm[3]/255.0);
+        rgb[0]   = rgbm[0] * f / 255.0;
+        rgb[1]   = rgbm[1] * f / 255.0;
+        rgb[2]   = rgbm[2] * f / 255.0;
+    }
+};
+
+
+struct RGBDRange : Operator {
+
+    const double _range;
+
+    RGBDRange( double range): _range( range ) {
+    }
+
+    const char* getName() const { return "rgbd"; }
+
+    void encode( float rgb[3], uint8_t rgbm[4]) const {
+
+        double maxRGB = std::max( std::max( rgb[0], 1.0f) , std::max( rgb[1], rgb[2] ) );
+        double D      = std::max( _range / maxRGB, 1.0);
+        D             = std::min( floor(D) / 255.0, 1.0); // the 255 is to save in uint8 space
+        double f      = 255.0 * (D * (255.0 / _range));
+        rgbm[0]       = rgb[0] * f;
+        rgbm[1]       = rgb[1] * f;
+        rgbm[2]       = rgb[2] * f;
+        rgbm[3]       = D * 255.0;
+    }
+
+    void decode( uint8_t rgbm[4], float rgb[3] ) const {
+        double f = _range / ( rgbm[3] * 255.0 );
+        rgb[0]   = rgbm[0] * f;
+        rgb[1]   = rgbm[1] * f;
+        rgb[2]   = rgbm[2] * f;
     }
 };
 
@@ -66,17 +153,13 @@ struct RGBE : Operator {
     const char* getName() const { return "rgbe"; }
     void encode( float rgb[3], uint8_t rgbe[4]) const {
 
-        float v = rgb[0];
-        if(rgb[1] > v)
-            v = rgb[1];
-        if(rgb[2] > v)
-            v = rgb[2];
+        double maxRGB = std::max( rgb[0], std::max( rgb[1], rgb[2] ) );
 
-        if(v < 1e-32) {
+        if(maxRGB < 1e-32) {
             rgbe[0] = rgbe[1] = rgbe[2] = rgbe[3] = 0;
         } else {
             int e;
-            v = frexp(v, &e) * 256.0 / v;
+            double v = frexp(maxRGB, &e) * 256.0 / maxRGB;
             rgbe[0] = (unsigned char)(rgb[0] * v);
             rgbe[1] = (unsigned char)(rgb[1] * v);
             rgbe[2] = (unsigned char)(rgb[2] * v);
@@ -86,7 +169,7 @@ struct RGBE : Operator {
 
     void decode( uint8_t rgbe[4], float rgb[3] ) const {
         double a = rgbe[3];
-        double f = pow(2.0, a - (128.0 + 8.0));
+        double f = ldexp(1.0, a - (128.0 + 8.0));
         rgb[0] = rgbe[0] * f;
         rgb[1] = rgbe[1] * f;
         rgb[2] = rgbe[2] * f;
@@ -107,7 +190,16 @@ struct Process {
 
     void setRGBM( double range ) {
         _operator= new RGBM( range );
-        std::cout << "use range " << range << " for rgbm " << std::endl;
+        std::cout << "use range " << range << " for " << _operator->getName() << std::endl;
+    }
+
+    void setRGBD2(  double range ) {
+        _operator = new RGBDRange2( range );
+        std::cout << "use range " << range << " for " << _operator->getName() << std::endl;
+    }
+    void setRGBD() {
+        _operator = new RGBD();
+        //std::cout << "use range " << range << " for " << _operator->getName() << std::endl;
     }
 
     void setRGBE() {
@@ -123,7 +215,7 @@ struct Process {
         ImageSpec specIn = src.spec();
 
         ImageSpec specOut(specIn.width, specIn.height, 4, TypeDesc::UINT8);
-        specOut.attribute("oiio:UnassociatedAlpha", true);
+        specOut.attribute("oiio:UnassociatedAlpha", 1);
         ImageBuf dst(filenameOut, specOut);
 
 
@@ -135,7 +227,7 @@ struct Process {
         ImageBuf::Iterator<uint8_t, uint8_t> iteratorDst(dst, 0, width, 0, height);
 
         float result[3];
-
+        float biggest = 0.0;
         for (; iteratorDst.valid(); iteratorDst++, iteratorSrc++) {
             iteratorSrc.pos( iteratorDst.x(), iteratorDst.y(), iteratorDst.z());
 
@@ -143,12 +235,14 @@ struct Process {
             uint8_t* out = (uint8_t*)iteratorDst.rawptr();
 
             (*_operator).encode(in, out );
-            // (*_operator).decode(out, result );
+            (*_operator).decode(out, result );
 
-            // std::cout << abs(result[0]-in[0]) << " " << abs(result[1]-in[1]) << " " << abs(result[2]-in[2]) << std::endl;
+            biggest = std::max(
+                std::max( double(biggest), fabs(result[0]-in[0]) ),
+                std::max( fabs(result[1]-in[1]), fabs(result[2]-in[2]) ) );
 
         }
-
+        std::cout << "error max " << biggest << std::endl;
         dst.save();
 
     }
@@ -157,9 +251,17 @@ struct Process {
 
         std::cout << "decode " << filenameIn << " to " << filenameOut << " with method " << _operator->getName() << std::endl;
 
-        ImageBuf src(filenameIn);
-        src.read();
-        ImageSpec specIn = src.spec();
+        ImageInput* image = ImageInput::create(filenameIn);
+        ImageSpec config = ImageSpec();
+        ImageSpec specIn = ImageSpec();
+        config.attribute("oiio:UnassociatedAlpha", 1);
+        image->open(filenameIn, specIn, config );
+        uint8_t* data = new uint8_t[specIn.width * specIn.height * specIn.nchannels ];
+        image->read_image( TypeDesc::UINT8, data );
+        image->close();
+
+        ImageBuf src(specIn, data);
+
 
         int width = specIn.width,
             height = specIn.height;
@@ -219,7 +321,7 @@ struct Process {
 
 int usage( char* command) {
     std::cout << "usage: " << command << " [-d] [-m method] [-r range] input output" << std::endl;
-    std::cout << "encode/decode image into rgbm/e png" << std::endl;
+    std::cout << "encode/decode image into rgbm/rgbd/rgbe png" << std::endl;
     return 1;
 }
 
@@ -253,6 +355,10 @@ int main(int argc, char* argv[]) {
         Process process;
         if ( method == "rgbm" ) {
             process.setRGBM( range );
+        } else if ( method == "rgbd2" ) {
+            process.setRGBD2( range );
+        } else if ( method == "rgbd" ) {
+            process.setRGBD();
         } else {
             process.setRGBE();
         }

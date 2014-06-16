@@ -18,3 +18,5 @@ make
 - http://graphicrants.blogspot.fr/2009/04/rgbm-color-encoding.html
 - https://gist.github.com/aras-p/1199797
 - http://mynameismjp.wordpress.com/2008/12/12/logluv-encoding-for-hdr/
+- http://lousodrome.net/blog/light/2013/05/26/gamma-correct-and-hdr-rendering-in-a-32-bits-buffer/
+- http://vemberaudio.se/graphics/RGBdiv8.pdf

@@ -10,18 +10,21 @@ list="../tests/Alexs_Apt_2k.hdr
 
 #rgbm
 range_list="4 8 16 32"
-method="rgbm"
-for file in ${list}
+methods="rgbm"
+for method in ${methods}
 do
-
-    filename=$(basename "$file")
-    extension="${filename##*.}"
-    filename="${filename%.*}"
-
-    for range in ${range_list}
+    for file in ${list}
     do
-        ./rgbx -m ${method} -r ${range} ${file} "${filename}_${method}_${range}.png"
-        ./rgbx -d -m ${method} -r ${range} "${filename}_${method}_${range}.png" "${filename}_${method}_${range}_decode.tif"
+
+        filename=$(basename "$file")
+        extension="${filename##*.}"
+        filename="${filename%.*}"
+
+        for range in ${range_list}
+        do
+            ./rgbx -m ${method} -r ${range} ${file} "${filename}_${method}_${range}.png"
+            ./rgbx -d -m ${method} -r ${range} "${filename}_${method}_${range}.png" "${filename}_${method}_${range}_decode.tif"
+        done
     done
 done
 
@@ -34,6 +37,6 @@ do
     filename="${filename%.*}"
 
     ./rgbx -m ${method} ${file} "${filename}_${method}.png"
-    ./rgbx -d -m ${method} "${filename}_${method}.png" "${filename}_${method}_${range}.tif"
+    ./rgbx -d -m ${method} "${filename}_${method}.png" "${filename}_${method}_decode.tif"
 
 done
