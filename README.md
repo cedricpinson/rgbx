@@ -1,17 +1,30 @@
-rgbx is a small tool to try different encoding hdr to rgba8 format.
+**RGBX**
+
+rgbx is a tool to try different encoding hdr to rgba8 format
 it supports:
 - rgbe
 - rgbm
 - rgbd
+- rgbd2 ( rgbd with range )
+
+**usage**
+
+    // encode
+    rgbx -m method [-r range] inputImage_hdr.tif outputImage_rgba8.png
+    
+    // decode
+    rgbx -d -m method [-r range] inputImage_rgba8.png outputImage_hdr.tif
 
 **dependancies**
 - openimageio
 - cmake
 
 **builds**
-mkdir build
-cmake ../
-make
+
+    mkdir build
+    cmake ../
+    make
+
 
 **Links**
 - http://iwasbeingirony.blogspot.fr/2010/06/difference-between-rgbm-and-rgbd.html
