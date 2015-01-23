@@ -14,3 +14,7 @@ find_package(Boost COMPONENTS system )
 
 add_executable(rgbx rgbx.cpp)
 target_link_libraries(rgbx ${OIIO_LIBRARY} ${Boost_LIBRARIES} )
+
+install(TARGETS rgbx
+  RUNTIME DESTINATION bin
+)

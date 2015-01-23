@@ -38,10 +38,10 @@ struct RGBM : Operator {
         double maxRGB = std::max( r , std::max( g, b ) );
         double a = ceil(maxRGB * 255.0) / 255.0;
 
-        rgbm[0] = std::round(255.0*std::min(r / a, 1.0));
-        rgbm[1] = std::round(255.0*std::min(g / a, 1.0));
-        rgbm[2] = std::round(255.0*std::min(b / a, 1.0));
-        rgbm[3] = std::round(255.0*std::min(a, 1.0));
+        rgbm[0] = round(255.0*std::min(r / a, 1.0));
+        rgbm[1] = round(255.0*std::min(g / a, 1.0));
+        rgbm[2] = round(255.0*std::min(b / a, 1.0));
+        rgbm[3] = round(255.0*std::min(a, 1.0));
     }
 
     void decode( uint8_t rgbm[4], float rgb[3] ) const {
@@ -196,12 +196,24 @@ struct Process {
         ImageBuf::Iterator<uint8_t, uint8_t> iteratorDst(dst, 0, width, 0, height);
 
         float result[3];
+        float inTmp[3];
+        float* in;
         float biggest = 0.0;
         for (; iteratorDst.valid(); iteratorDst++, iteratorSrc++) {
             iteratorSrc.pos( iteratorDst.x(), iteratorDst.y(), iteratorDst.z());
 
-            float* in = (float*)iteratorSrc.rawptr();
+            float* inRaw = (float*)iteratorSrc.rawptr();
             uint8_t* out = (uint8_t*)iteratorDst.rawptr();
+
+            // we assume to have at least 3 channel in inputs, but it could be greyscale
+            if ( specIn.nchannels < 3 ) {
+                inTmp[0] = inRaw[0];
+                inTmp[1] = inRaw[0];
+                inTmp[2] = inRaw[0];
+                in = inTmp;
+            } else {
+                in = inRaw;
+            }
 
             (*_operator).encode(in, out );
             (*_operator).decode(out, result );
