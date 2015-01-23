@@ -224,7 +224,7 @@ struct Process {
 
         }
         std::cout << "error max " << biggest << std::endl;
-        dst.save();
+        dst.write(filenameOut);
 
     }
 
@@ -262,7 +262,7 @@ struct Process {
             (*_operator).decode(in, out );
         }
 
-        dst.save();
+        dst.write(filenameOut);
     }
 
 
@@ -293,7 +293,7 @@ struct Process {
             error[2] = fabs(in[2] - decoded[2] );
         }
 
-        error.save();
+        error.write(errorFilename);
     }
 
 
